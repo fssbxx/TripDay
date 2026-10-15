@@ -1,0 +1,20 @@
+services:
+  tripday:
+    build: .
+    container_name: TripDay
+    ports:
+      # 宿主机端口:容器内端口；默认均为 3066，按需只改左侧宿主机端口
+      - "3066:3066"
+    volumes:
+      # SQLite 数据库与用户数据持久化到宿主机 ./data
+      - ./data:/data
+    environment:
+      SCHEDULE_DATA_DIR: /data
+      # 首次启动时用于生成管理员账号（启动一次后请修改密码）
+      ADMIN_USERNAME: admin
+      ADMIN_PASSWORD: admin
+      # 会话签名密钥，公网部署务必改成随机长串
+      SESSION_SECRET: change-me-please
+      # 分享链接前缀（公网域名或局域网地址），留空则在「导出与分享」页里配置
+      SHARE_BASE_URL: ""
+    restart: unless-stopped

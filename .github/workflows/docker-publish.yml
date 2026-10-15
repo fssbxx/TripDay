@@ -1,0 +1,55 @@
+name: Build and Push to Docker Hub
+
+# 触发条件：
+#  1. 推送到 main 分支        -> 构建并推送 latest
+#  2. 推送 v* 标签（如 v1.0.0）-> 构建并推送 1.0.0 / 1.0 / latest
+#  3. 在 Actions 页面手动运行  -> 构建并推送
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  workflow_dispatch:
+
+env:
+  # Docker Hub 上的镜像名，最终地址为 <用户名>/tripday
+  IMAGE_NAME: tripday
+
+jobs:
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 启用 Buildx（带 GitHub Actions 缓存）
+        uses: docker/setup-buildx-action@v3
+
+      - name: 登录 Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: 生成镜像标签与元数据
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=sha,format=short
+
+      - name: 构建并推送镜像
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          # 覆盖 Dockerfile 里的清华源：GitHub 海外节点走官方 PyPI 更快
+          build-args: |
+            PIP_INDEX_URL=https://pypi.org/simple
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

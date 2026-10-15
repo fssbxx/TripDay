@@ -1,0 +1,17 @@
+# 本地运行与构建产物
+.venv/
+data/
+schedules/
+__pycache__/
+*.pyc
+*.pyo
+build/
+dist/
+
+# 本地数据库（含账号与行程数据，切勿提交）
+*.db
+*.sqlite3
+
+# 编辑器 / 系统
+.DS_Store
+Thumbs.db
